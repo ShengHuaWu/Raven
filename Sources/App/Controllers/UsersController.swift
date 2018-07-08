@@ -11,7 +11,7 @@ struct UsersController: RouteCollection {
     }
     
     func createHandler(_ req: Request) throws -> Future<User> {
-        // `req.content.decode(User.self)` means obtain the user from JSON body
+        // `req.content.decode(User.self)` means obtaining the user from JSON body
         return try req.content.decode(User.self).save(on: req)
     }
     
@@ -25,6 +25,8 @@ struct UsersController: RouteCollection {
     }
     
     func updateHandler(_ req: Request) throws -> Future<User> {
+        // `flatMap` here means waiting both of `req.parameter.next` and
+        // `req.content.decode` finish and then executing the closure
         return try flatMap(to: User.self, req.parameters.next(User.self), req.content.decode(User.self)) { (user, updatedUser) in
             user.name = updatedUser.name
             user.username = updatedUser.username
@@ -33,6 +35,8 @@ struct UsersController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // `transform(to: HTTPStatus.noContent)` means converting
+        // `Future<User>` to `Future<HTTPStatus>` with the value `noContent`
         return try req.parameters.next(User.self).delete(on: req).transform(to: HTTPStatus.noContent)
     }
 }
