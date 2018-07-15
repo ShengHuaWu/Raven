@@ -1,10 +1,12 @@
 import FluentPostgreSQL
 import Vapor
+import Authentication
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
     /// Register providers first
     try services.register(FluentPostgreSQLProvider())
+    try services.register(AuthenticationProvider())
 
     /// Register routes to the router
     let router = EngineRouter.default()
@@ -17,7 +19,6 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     // Configure a database
     var databases = DatabasesConfig()
-    // 3
     let databaseConfig = PostgreSQLDatabaseConfig(
         hostname: "localhost",
         username: "vapor",
@@ -30,5 +31,11 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     /// Configure migrations
     var migrations = MigrationConfig()
     migrations.add(model: User.self, database: .psql)
+    migrations.add(model: Token.self, database: .psql)
     services.register(migrations)
+    
+    // Command reset database
+    var commandConfig = CommandConfig.default()
+    commandConfig.use(RevertCommand.self, as: "revert")
+    services.register(commandConfig)
 }
