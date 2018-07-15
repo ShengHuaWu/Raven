@@ -5,10 +5,18 @@ struct UsersController: RouteCollection {
     func boot(router: Router) throws {
         let usersRoute = router.grouped("api", "users")
         usersRoute.post(use: createHandler)
-        usersRoute.get(use: getAllHandler)
-        usersRoute.get(User.parameter, use: getHandler)
-        usersRoute.put(User.parameter, use: updateHandler)
-        usersRoute.delete(User.parameter, use: deleteHandler)
+        
+        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware, guardAuthMiddleware)
+        basicAuthGroup.post("login", use: loginHandler)
+        
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let tokenAuthGroup = usersRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.get(User.parameter, use: getHandler)
+        tokenAuthGroup.get(use: getAllHandler)
+        tokenAuthGroup.put(User.parameter, use: updateHandler)
+        tokenAuthGroup.delete(User.parameter, use: deleteHandler)
     }
     
     func createHandler(_ req: Request) throws -> Future<User.Public> {
@@ -43,5 +51,11 @@ struct UsersController: RouteCollection {
         // `transform(to: HTTPStatus.noContent)` means converting
         // `Future<User>` to `Future<HTTPStatus>` with the value `noContent`
         return try req.parameters.next(User.self).delete(on: req).transform(to: HTTPStatus.noContent)
+    }
+    
+    func loginHandler(_ req: Request) throws -> Future<Token> {
+        let user = try req.requireAuthenticated(User.self) // This saves the user’s identity in the request’s authentication cache
+        let token = try Token.generate(for: user)
+        return token.save(on: req)
     }
 }
