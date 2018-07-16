@@ -73,3 +73,22 @@ extension Future where T: User {
         }
     }
 }
+
+// MARK: - Admin User
+// This struct is used for seed an admin user because of authentication
+struct AdminUser: Migration {
+    typealias Database = PostgreSQLDatabase
+    
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+        guard let hashedPassword = try? BCrypt.hash("password") else {
+            fatalError("Fail to create admin user")
+        }
+        
+        let user = User(name: "admin", username: "admin", password: hashedPassword)
+        return user.save(on: conn).transform(to: ())
+    }
+    
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
+    }
+}

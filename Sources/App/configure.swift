@@ -19,11 +19,26 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     // Configure a database
     var databases = DatabasesConfig()
+    let hostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+    let username = Environment.get("DATABASE_USER") ?? "vapor"
+    let password = Environment.get("DATABASE_PASSWORD") ?? "password"
+    
+    let databaseName: String
+    let databasePort: Int
+    if env == .testing {
+        databaseName = "vapor-test"
+        databasePort = 5433
+    } else {
+        databaseName = Environment.get("DATABASE_DB") ?? "vapor"
+        databasePort = 5432
+    }
+    
     let databaseConfig = PostgreSQLDatabaseConfig(
-        hostname: "localhost",
-        username: "vapor",
-        database: "vapor",
-        password: "password")
+        hostname: hostname,
+        port: databasePort,
+        username: username,
+        database: databaseName,
+        password: password)
     let database = PostgreSQLDatabase(config: databaseConfig)
     databases.add(database: database, as: .psql)
     services.register(databases)
@@ -32,6 +47,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var migrations = MigrationConfig()
     migrations.add(model: User.self, database: .psql)
     migrations.add(model: Token.self, database: .psql)
+    migrations.add(migration: AdminUser.self, database: .psql)
     services.register(migrations)
     
     // Command reset database
