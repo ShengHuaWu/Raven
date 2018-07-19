@@ -64,7 +64,7 @@ extension Application {
     }
     
     // Convenience method that sends a request and we don't care about the response
-    func sendRequest<T>(tp path: String, method: HTTPMethod, headers: HTTPHeaders, body: T, loggedInRequest: Bool = false, loggedInUser: User? = nil) throws where T: Content {
+    func sendRequest<T>(to path: String, method: HTTPMethod, headers: HTTPHeaders, body: T, loggedInRequest: Bool = false, loggedInUser: User? = nil) throws where T: Content {
         let _ = try sendRequest(to: path, method: method, headers: headers, body: body, loggedInRequest: loggedInRequest, loggedInUser: loggedInUser)
     }
     
