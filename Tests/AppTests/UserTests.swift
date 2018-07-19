@@ -83,4 +83,12 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(user.username, usersUsername)
         XCTAssertEqual(user.id, userToBeUpdated.id)
     }
+    
+    static var allTests = [
+        ("testUserCanBeSavedWithAPI", testUserCanBeSavedWithAPI),
+        ("testGettingASingleUserFromAPI", testGettingASingleUserFromAPI),
+        ("testUsersCanBeRetrievedFromAPI", testUsersCanBeRetrievedFromAPI),
+        ("testUserCanBeDeletedByAPI", testUserCanBeDeletedByAPI),
+        ("testUserCanBeUpdatedByAPI", testUserCanBeUpdatedByAPI)
+    ]
 }
