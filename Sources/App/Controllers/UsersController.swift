@@ -3,14 +3,17 @@ import Crypto
 
 struct UsersController: RouteCollection {
     func boot(router: Router) throws {
+        // No authentication for creating user
         let usersRoute = router.grouped("api", "users")
         usersRoute.post(use: createHandler)
         
+        // Basic authentication for login
         let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware, guardAuthMiddleware)
         basicAuthGroup.post("login", use: loginHandler)
         
+        // Token authentication for getting one, getting all, updating and deleting
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         let tokenAuthGroup = usersRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         tokenAuthGroup.get(User.parameter, use: getHandler)
@@ -37,9 +40,15 @@ struct UsersController: RouteCollection {
     }
     
     func updateHandler(_ req: Request) throws -> Future<User.Public> {
+        let authedUser = try req.requireAuthenticated(User.self)
+        
         // `flatMap` here means waiting both of `req.parameter.next` and
         // `req.content.decode` finish and then executing the closure
         return try flatMap(to: User.Public.self, req.parameters.next(User.self), req.content.decode(User.self)) { (user, updatedUser) in
+            guard authedUser.id == user.id else {
+                throw Abort(.unauthorized)
+            }
+            
             user.name = updatedUser.name
             user.username = updatedUser.username
             user.password = try BCrypt.hash(updatedUser.password)
@@ -48,9 +57,16 @@ struct UsersController: RouteCollection {
     }
     
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        // `transform(to: HTTPStatus.noContent)` means converting
-        // `Future<User>` to `Future<HTTPStatus>` with the value `noContent`
-        return try req.parameters.next(User.self).delete(on: req).transform(to: HTTPStatus.noContent)
+        let authedUser = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap { (user) in
+            guard authedUser.id == user.id else {
+                throw Abort(.unauthorized)
+            }
+            
+            // `transform(to: HTTPStatus.noContent)` means converting
+            // `Future<User>` to `Future<HTTPStatus>` with the value `noContent`
+            return user.delete(on: req).transform(to: HTTPStatus.noContent)
+        }
     }
     
     func loginHandler(_ req: Request) throws -> Future<Token> {
