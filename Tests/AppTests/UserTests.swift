@@ -64,7 +64,7 @@ final class UserTests: XCTestCase {
     func testUserCanBeDeletedByAPI() throws {
         // Generate a user and send a delete request
         let userToBeDeleted = try User.create(on: conn)
-        let _ = try app.sendRequest(to: "\(usersURI)\(userToBeDeleted.id!)", method: .DELETE, loggedInRequest: true)
+        let _ = try app.sendRequest(to: "\(usersURI)\(userToBeDeleted.id!)", method: .DELETE, loggedInUser: userToBeDeleted)
         
         // Fetch users to verify
         let users = try app.getResponse(to: usersURI, decodeTo: [User.Public].self, loggedInRequest: true)
@@ -74,10 +74,8 @@ final class UserTests: XCTestCase {
     
     func testUserCanBeUpdatedByAPI() throws {
         let userToBeUpdated = try User.create(on: conn)
-        userToBeUpdated.name = usersName
-        userToBeUpdated.username = usersUsername
-        
-        let user = try app.getResponse(to: "\(usersURI)\(userToBeUpdated.id!)", method: .PUT, headers: ["Content-Type": "application/json"], data: userToBeUpdated, decodeTo: User.Public.self, loggedInRequest: true)
+        let data = ["name": usersName, "username": usersUsername, "password": "password"]
+        let user = try app.getResponse(to: "\(usersURI)\(userToBeUpdated.id!)", method: .PUT, headers: ["Content-Type": "application/json"], data: data, decodeTo: User.Public.self, loggedInUser: userToBeUpdated)
         
         XCTAssertEqual(user.name, usersName)
         XCTAssertEqual(user.username, usersUsername)
