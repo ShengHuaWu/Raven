@@ -80,9 +80,8 @@ struct AdminUser: Migration {
     typealias Database = PostgreSQLDatabase
     
     static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
-        // Of course, using `password` isn't appropriate for production.
-        // Perhaps, change this to an environment variable.
-        guard let hashedPassword = try? BCrypt.hash("password") else {
+        let password = Environment.get("ADMIN_PASSWORD") ?? "password"
+        guard let hashedPassword = try? BCrypt.hash(password) else {
             fatalError("Fail to create admin user")
         }
         
