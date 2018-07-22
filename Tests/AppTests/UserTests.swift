@@ -72,10 +72,31 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(users.count, 1)
     }
     
+    func testUserCanBeDeletedWithAdminByAPI() throws {
+        // Generate a user and send a delete request
+        let userToBeDeleted = try User.create(on: conn)
+        let _ = try app.sendRequest(to: "\(usersURI)\(userToBeDeleted.id!)", method: .DELETE, loggedInRequest: true)
+        
+        // Fetch users to verify
+        let users = try app.getResponse(to: usersURI, decodeTo: [User.Public].self, loggedInRequest: true)
+        
+        XCTAssertEqual(users.count, 1)
+    }
+    
     func testUserCanBeUpdatedByAPI() throws {
         let userToBeUpdated = try User.create(on: conn)
         let data = ["name": usersName, "username": usersUsername, "password": "password"]
         let user = try app.getResponse(to: "\(usersURI)\(userToBeUpdated.id!)", method: .PUT, headers: ["Content-Type": "application/json"], data: data, decodeTo: User.Public.self, loggedInUser: userToBeUpdated)
+        
+        XCTAssertEqual(user.name, usersName)
+        XCTAssertEqual(user.username, usersUsername)
+        XCTAssertEqual(user.id, userToBeUpdated.id)
+    }
+    
+    func testUserCanBeUpdatedWithAdminByAPI() throws {
+        let userToBeUpdated = try User.create(on: conn)
+        let data = ["name": usersName, "username": usersUsername, "password": "password"]
+        let user = try app.getResponse(to: "\(usersURI)\(userToBeUpdated.id!)", method: .PUT, headers: ["Content-Type": "application/json"], data: data, decodeTo: User.Public.self, loggedInRequest: true)
         
         XCTAssertEqual(user.name, usersName)
         XCTAssertEqual(user.username, usersUsername)
@@ -87,6 +108,8 @@ final class UserTests: XCTestCase {
         ("testGettingASingleUserFromAPI", testGettingASingleUserFromAPI),
         ("testUsersCanBeRetrievedFromAPI", testUsersCanBeRetrievedFromAPI),
         ("testUserCanBeDeletedByAPI", testUserCanBeDeletedByAPI),
-        ("testUserCanBeUpdatedByAPI", testUserCanBeUpdatedByAPI)
+        ("testUserCanBeDeletedWithAdminByAPI", testUserCanBeDeletedWithAdminByAPI),
+        ("testUserCanBeUpdatedByAPI", testUserCanBeUpdatedByAPI),
+        ("testUserCanBeUpdatedWithAdminByAPI", testUserCanBeUpdatedWithAdminByAPI)
     ]
 }
